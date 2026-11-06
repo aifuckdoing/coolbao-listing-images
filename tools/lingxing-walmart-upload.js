@@ -85,13 +85,17 @@
     for (const [msku, sku] of Object.entries(map)) {
       const row = rows().find((tr) => [...tr.querySelectorAll('input')].some((x) => x.value === msku));
       if (!row) { out.push(msku + ': 找不到该行'); continue; }
-      const plus = row.children[1].querySelector('.el-icon-plus, i, div, span');
-      (plus || row.children[1]).click();
+      // 子体图片列（第 2 列）的 + 图标；已有图时点缩略图同样打开弹窗
+      const cell = row.children[1];
+      const plus = cell.querySelector('.lx_img_add') || [...cell.querySelectorAll('*')].filter((e) => e.offsetParent).pop() || cell;
+      plus.click();
       for (let i = 0; i < 20 && !dlg(); i++) await W(300);
       if (!dlg()) { out.push(msku + ': 弹窗未打开'); continue; }
       const r = await pump(sku, () => dlg().querySelector('input[type=file]'), () => dlg().querySelectorAll('img').length);
-      [...dlg().querySelectorAll('button')].find((b) => b.innerText.trim() === '确定').click();
-      await W(1000);
+      // 弹窗里有多个隐藏的「确定」，只点可见的最后一个
+      const ok = [...dlg().querySelectorAll('button')].filter((b) => b.offsetParent && b.innerText.replace(/\s/g, '') === '确定');
+      ok[ok.length - 1].click();
+      await W(1500);
       out.push(msku + ' ← ' + r);
     }
     return out.join('\n');
